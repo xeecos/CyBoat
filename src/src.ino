@@ -1,5 +1,5 @@
 #include "cyberpi.h"
-#include "ble.h"
+#include "ble_client.h"
 CyberPi cyber;
 int lo[7] = {48, 50, 52, 53, 55, 57, 59};
 int mo[7] = {60, 62, 64, 65, 67, 69, 71};
@@ -34,7 +34,10 @@ void setup()
 {
     Serial.begin(115200);
     cyber.begin();
-    ble_init("CyBoat N1", onBLEReceived);
+    cyber.clean_lcd();
+    cyber.render_lcd();
+    // ble_server_init("CyBoat N1", onBLEReceived);
+    ble_client_init(onBLEReceived);
     // cyber.on_microphone_data(mic_recv);
     // for(int i=0;i<14;i++)
     // {
@@ -68,19 +71,20 @@ int pop_idx = 0;
 void loop()
 {
     cyber.read_gyro();
-    // Serial.printf("%.2f,%.2f,%.2f,%.2f,%.2f\n", cyber.get_roll(), cyber.get_pitch(), cyber.get_acc_x() / 80, cyber.get_acc_y() / 80, cyber.get_acc_z() / 80);
-    // xx[push_idx] = cyber.get_acc_z();
-    // push_idx++;
-    // push_idx = push_idx%128;
-    // cyber.clean_lcd();
-    // for(int i=0;i<128;i++)
-    // {
-    //     pop_idx = push_idx+1;
-    //     int idx = pop_idx+i;
-    //     idx %= 128;
-    //     int current = (int8_t)(xx[idx]/64)+64;
-    //     cyber.set_lcd_pixel(i,current,0xffff);
-    // }
-    // cyber.render_lcd();
+    Serial.printf("%.2f,%.2f,%.2f,%.2f,%.2f\n", cyber.get_roll(), cyber.get_pitch(), cyber.get_acc_x() / 80, cyber.get_acc_y() / 80, cyber.get_acc_z() / 80);
+    xx[push_idx] = cyber.get_acc_z();
+    push_idx++;
+    push_idx = push_idx%128;
+    cyber.clean_lcd();
+    for(int i=0;i<128;i++)
+    {
+        pop_idx = push_idx+1;
+        int idx = pop_idx+i;
+        idx %= 128;
+        int current = (int8_t)(xx[idx]/64)+64;
+        cyber.set_lcd_pixel(i,current,0xffff);
+    }
+    cyber.render_lcd();
+    ble_client_run();
     delay(25);
 }

@@ -5,7 +5,8 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <Arduino.h>
-#include "ble.h"
+#include "ble_server.h"
+#include "config.h"
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
@@ -46,7 +47,7 @@ class BTCallbacks : public BLECharacteristicCallbacks
                     fromClient[fromIndex + 1] = '\0';
                     if (fromIndex > 1)
                     {
-                        _onReceive((uint8_t *)fromClient, fromIndex+1);
+                        _onReceive((uint8_t *)fromClient, fromIndex + 1);
                     }
                     fromIndex = 0;
                 }
@@ -69,7 +70,7 @@ class BTCallbacks : public BLECharacteristicCallbacks
         }
     }
 };
-void ble_init(const char *name, void (*onReceived)(uint8_t *, int))
+void ble_server_init(const char *name, void (*onReceived)(uint8_t *, int))
 {
     _onReceive = onReceived;
     BLEDevice::init(name);
@@ -103,8 +104,7 @@ void ble_init(const char *name, void (*onReceived)(uint8_t *, int))
     pServer->getAdvertising()->addServiceUUID(SERVICE_UUID);
     pServer->getAdvertising()->start();
 }
-
-void ble_send(int status, String msg)
+void ble_server_send(int status, String msg)
 {
     if (deviceConnected)
     {
@@ -113,7 +113,7 @@ void ble_send(int status, String msg)
         delay(10); // bluetooth stack will go into congestion, if too many packets are sent
     }
 }
-void ble_send(char *msg)
+void ble_server_send(char *msg)
 {
     if (deviceConnected)
     {
@@ -143,7 +143,7 @@ void ble_send(char *msg)
         free(out);
     }
 }
-void ble_send_ok()
+void ble_server_send_ok()
 {
     if (deviceConnected)
     {
@@ -155,11 +155,11 @@ void ble_send_ok()
 char cmd[128] = {0};
 char data[128] = {0};
 
-bool ble_connected()
+bool ble_server_connected()
 {
     return deviceConnected;
 }
-void ble_run()
+void ble_server_run()
 {
     if (!deviceConnected && oldDeviceConnected)
     {
