@@ -42,9 +42,9 @@ void CyberPi::begin()
     TaskHandle_t threadTask_lcd;
     xTaskCreatePinnedToCore(this->_on_lcd_thread, "_on_lcd_thread", 4096, NULL, 10, &threadTask_lcd, 1);
     TaskHandle_t threadTask_sensor;
-    xTaskCreatePinnedToCore(this->_on_sensor_thread, "on_sensor_read", 10000, this, 8, &threadTask_sensor, 1);
+    xTaskCreatePinnedToCore(this->_on_sensor_thread, "on_sensor_read", 10000, this, 10, &threadTask_sensor, 1);
     TaskHandle_t threadTask_sound;
-    xTaskCreatePinnedToCore(this->_on_sound_thread, "on_sound_read", 10000, this, 9, &threadTask_sound, 1);
+    xTaskCreatePinnedToCore(this->_on_sound_thread, "on_sound_read", 10000, this, 10, &threadTask_sound, 1);
 }
 void CyberPi::_on_lcd_thread(void *p)
 {
