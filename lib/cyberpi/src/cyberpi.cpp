@@ -274,7 +274,6 @@ void CyberPi::set_lcd_pixel(uint8_t x, uint8_t y, uint16_t color)
 
 void CyberPi::set_bitmap(uint8_t x, uint8_t y, Bitmap *bitmap)
 {
-    Serial.printf("%d,%d\n", bitmap->width, bitmap->height);
     for (int i = 0; i < bitmap->height; i++)
     {
         for (int j = 0; j < bitmap->width; j++)
@@ -282,6 +281,12 @@ void CyberPi::set_bitmap(uint8_t x, uint8_t y, Bitmap *bitmap)
             set_lcd_pixel(x + j, y + i, bitmap->buffer[i * bitmap->width + j]);
         }
     }
+}
+void CyberPi::free_bitmap(Bitmap *buffer)
+{
+    free(buffer->buffer);
+    free(buffer);
+    buffer = NULL;
 }
 uint16_t CyberPi::color24_to_16(uint32_t rgb)
 {

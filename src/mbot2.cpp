@@ -10,7 +10,6 @@ void sendCMD(uint8_t *cmd, int len)
     for (int i = 0; i < len; i++)
     {
         uart.write(cmd[i]);
-        Serial.printf("hex:%d, %x\n", i, cmd[i]);
         checksum += cmd[i];
     }
     uart.write(checksum & 0x7f);

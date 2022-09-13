@@ -9,7 +9,7 @@ typedef enum
     BLE_WIFI_SET,
     BLE_IP_GET
 } BLE_METHOD;
-void ble_server_init(const char* name,void (*)(uint8_t*,int));
+void ble_server_init(const char *name, void (*onConnected)(const char *), void (*onReceived)(uint16_t connId, uint8_t *, int));
 void ble_server_send(int status, const char* msg);
 void ble_server_send(char *msg);
 void ble_server_send_ok();

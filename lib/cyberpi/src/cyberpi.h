@@ -54,6 +54,7 @@ public:
     Bitmap *create_text(wchar_t *chars, uint16_t color, uint8_t font_size);
     Bitmap *create_text(char *chars, uint16_t color, uint8_t font_size);
     void set_bitmap(uint8_t x, uint8_t y, Bitmap *buffer);
+    void free_bitmap(Bitmap *buffer);
     uint16_t color24_to_16(uint32_t rgb);
     uint16_t swap_color(uint16_t color);
     void render_lcd();

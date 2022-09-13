@@ -17,12 +17,14 @@ char fromClient[128] = {0};
 int fromIndex = 0;
 int toIndex = 0;
 
-void (*_onReceive)(uint8_t *, int);
+void (*__onReceive)(uint16_t connId, uint8_t *, int);
+void (*__onConnected)(const char *);
 class BTServerCallbacks : public BLEServerCallbacks
 {
     void onConnect(BLEServer *pServer)
     {
         deviceConnected = true;
+        __onConnected("已连接");
     };
 
     void onDisconnect(BLEServer *pServer)
@@ -47,7 +49,7 @@ class BTCallbacks : public BLECharacteristicCallbacks
                     fromClient[fromIndex + 1] = '\0';
                     if (fromIndex > 1)
                     {
-                        _onReceive((uint8_t *)fromClient, fromIndex + 1);
+                        __onReceive(0, (uint8_t *)fromClient, fromIndex + 1);
                     }
                     fromIndex = 0;
                 }
@@ -70,9 +72,10 @@ class BTCallbacks : public BLECharacteristicCallbacks
         }
     }
 };
-void ble_server_init(const char *name, void (*onReceived)(uint8_t *, int))
+void ble_server_init(const char *name, void (*onConnected)(const char *), void (*onReceived)(uint16_t connId, uint8_t *, int))
 {
-    _onReceive = onReceived;
+    __onReceive = onReceived;
+    __onConnected = onConnected;
     BLEDevice::init(name);
     // Create the BLE Device
 
