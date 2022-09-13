@@ -23,6 +23,7 @@ static long prev_time = 0;
 static int _loudness;
 CyberPi::CyberPi()
 {
+    _shared = new Bitmap();
     _render_ready = xSemaphoreCreateBinary();
     _led_data = this->malloc(15);
     _gyro_data = this->malloc(14);
@@ -31,6 +32,7 @@ CyberPi::CyberPi()
 }
 void CyberPi::begin()
 {
+    _shared->buffer = (uint16_t*)this->malloc(128*128*2);
     i2c_init();
     aw_init();
     begin_gpio();
@@ -91,7 +93,6 @@ void CyberPi::set_lcd_light(bool on)
 }
 Bitmap *CyberPi::create_text(wchar_t *chars, uint16_t color, uint8_t font_size)
 {
-    Bitmap *bitmap = new Bitmap();
     int cx = 0, cy = 0, x = 0, y = 0;
     int i = 0;
     uint32_t c;
@@ -119,10 +120,10 @@ Bitmap *CyberPi::create_text(wchar_t *chars, uint16_t color, uint8_t font_size)
         }
         i++;
     }
-    bitmap->width = cx;
-    bitmap->height = cy + font_max_height + 1;
-    bitmap->buffer = (uint16_t *)this->malloc(bitmap->width * bitmap->height * 2);
-    memset(bitmap->buffer, 0, bitmap->width * bitmap->height * 2);
+    _shared->width = cx;
+    _shared->height = cy + font_max_height + 1;
+    // bitmap->buffer = (uint16_t *)this->malloc(bitmap->width * bitmap->height * 2);
+    memset(_shared->buffer, 0, _shared->width * _shared->height * 2);
     cx = 0;
     cy = 0;
     i = 0;
@@ -140,17 +141,16 @@ Bitmap *CyberPi::create_text(wchar_t *chars, uint16_t color, uint8_t font_size)
         else
         {
             get_utf8_data(c, c < 256 ? 6 : font, buf, &elongate, &font_width, &font_height);
-            read_char(bitmap, cx, cy, font_size, font_max_height, buf + (elongate ? 2 : 0), font_width, font_height, elongate, color);
+            read_char(_shared, cx, cy, font_size, font_max_height, buf + (elongate ? 2 : 0), font_width, font_height, elongate, color);
             cx += font_width * font_max_height / font_height + 0.5f;
         }
         i++;
     }
     free(buf);
-    return bitmap;
+    return _shared;
 }
 Bitmap *CyberPi::create_text(char *chars, uint16_t color, uint8_t font_size)
 {
-    Bitmap *bitmap = new Bitmap();
     int cx = 0, cy = 0, x = 0, y = 0;
     int i = 0;
     uint8_t c;
@@ -178,10 +178,10 @@ Bitmap *CyberPi::create_text(char *chars, uint16_t color, uint8_t font_size)
         }
         i++;
     }
-    bitmap->width = cx;
-    bitmap->height = cy + font_max_height + 1;
-    bitmap->buffer = (uint16_t *)this->malloc(bitmap->width * bitmap->height * 2);
-    memset(bitmap->buffer, 0, bitmap->width * bitmap->height * 2);
+    _shared->width = cx;
+    _shared->height = cy + font_max_height + 1;
+    // bitmap->buffer = (uint16_t *)this->malloc(bitmap->width * bitmap->height * 2);
+    memset(_shared->buffer, 0, _shared->width * _shared->height * 2);
     cx = 0;
     cy = 0;
     i = 0;
@@ -199,13 +199,13 @@ Bitmap *CyberPi::create_text(char *chars, uint16_t color, uint8_t font_size)
         else
         {
             get_utf8_data(c, c < 256 ? 6 : font, buf, &elongate, &font_width, &font_height);
-            read_char(bitmap, cx, cy, font_size, font_max_height, buf + (elongate ? 2 : 0), font_width, font_height, elongate, color);
+            read_char(_shared, cx, cy, font_size, font_max_height, buf + (elongate ? 2 : 0), font_width, font_height, elongate, color);
             cx += font_width * font_max_height / font_height + 0.5f;
         }
         i++;
     }
     free(buf);
-    return bitmap;
+    return _shared;
 }
 void CyberPi::read_char(Bitmap *bitmap, int x, int y, float w, float h, uint8_t *buffer, float font_width, float font_height, bool elongate, uint16_t color)
 {
@@ -256,6 +256,7 @@ void CyberPi::read_char(Bitmap *bitmap, int x, int y, float w, float h, uint8_t 
                     }
                 }
             }
+            free(buf);
         }
     }
 }
@@ -281,12 +282,6 @@ void CyberPi::set_bitmap(uint8_t x, uint8_t y, Bitmap *bitmap)
             set_lcd_pixel(x + j, y + i, bitmap->buffer[i * bitmap->width + j]);
         }
     }
-}
-void CyberPi::free_bitmap(Bitmap *buffer)
-{
-    free(buffer->buffer);
-    free(buffer);
-    buffer = NULL;
 }
 uint16_t CyberPi::color24_to_16(uint32_t rgb)
 {

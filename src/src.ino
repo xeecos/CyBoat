@@ -16,22 +16,11 @@ int values[2] = {0, 0};
 int lo[7] = {48, 50, 52, 53, 55, 57, 59};
 int mo[7] = {60, 62, 64, 65, 67, 69, 71};
 int ho[7] = {72, 74, 76, 77, 79, 81, 83};
-void mic_recv(uint8_t *samples, int len)
-{
-    cyber.clean_lcd();
-    for (int i = 0; i < len; i += 8)
-    {
-        int current = (int8_t)samples[i + 1];
-        if (current > -64 && current < 64)
-        {
-            cyber.set_lcd_pixel(i / 8, current + 64, 0xffff);
-        }
-    }
-    cyber.render_lcd();
-}
+
 void onBLEReceived(uint16_t connId, uint8_t *res, int len)
 {
-    // Serial.printf("%d %d\n", connId, len);
+// Serial.printf("%d %d\n", connId, len);
+#if MODE == BOAT_MODE
     char str[65];
     int i;
     for (i = 0; i < len; i++)
@@ -39,16 +28,15 @@ void onBLEReceived(uint16_t connId, uint8_t *res, int len)
         str[i] = res[i];
     }
     str[len] = 0;
-    values[connId] = (int)strtof(str,NULL);
+    values[connId] = (int)strtof(str, NULL);
+#endif
     // cyber.clean_lcd();
 }
 void onBLEConnected(const char *name)
 {
     cyber.clean_lcd();
-    Bitmap *bitmap = cyber.create_text(L"CyPaddle 已连接", 0x6Fa6, 16);
-    cyber.set_bitmap(5, 7, bitmap);
+    cyber.set_bitmap(5, 7, cyber.create_text(L"CyPaddle 已连接", 0x6Fa6, 16));
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
 }
 void setup()
 {
@@ -56,27 +44,19 @@ void setup()
     cyber.begin();
     cyber.clean_lcd();
 #if MODE == BOAT_MODE
-    Bitmap *bitmap = cyber.create_text(L"启动中...", 0x6Fa6, 16);
-    cyber.set_bitmap(10, 7, bitmap);
+    cyber.set_bitmap(10, 7, cyber.create_text(L"启动中...", 0x6Fa6, 16));
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
     mbot2_init();
     ble_client_init(onBLEConnected, onBLEReceived);
     cyber.clean_lcd();
-    bitmap = cyber.create_text(L"CyBoat 已上线", 0x6Fa6, 16);
-    cyber.set_bitmap(10, 7, bitmap);
+    cyber.set_bitmap(10, 7, cyber.create_text(L"CyBoat 已上线", 0x6Fa6, 16));
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
 #elif MODE == PADDLE_MODE
-    Bitmap *bitmap = cyber.create_text(L"启动中...", 0x6Fa6, 16);
-    cyber.set_bitmap(5, 7, bitmap);
+    cyber.set_bitmap(5, 7, cyber.create_text(L"启动中...", 0x6Fa6, 16));
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
     ble_server_init("CyBoat P1", onBLEConnected, onBLEReceived);
-    bitmap = cyber.create_text(L"CyPaddle 已上线", 0x6Fa6, 16);
-    cyber.set_bitmap(5, 7, bitmap);
+    cyber.set_bitmap(5, 7, cyber.create_text(L"CyPaddle 已上线", 0x6Fa6, 16));
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
 #endif
     // cyboat - client
     // cypaddle - server
@@ -108,15 +88,13 @@ void loop()
     //     int current = (int8_t)(xx[idx] / 64) + 64;
     //     cyber.set_lcd_pixel(i, current, 0xffff);
     // }
-    int z = (int)(cyber.get_acc_z() / 10);
+    int z = (int)(cyber.get_acc_z() / 80);
     char *str1 = (char *)malloc(16);
     sprintf(str1, "z: %d\0", z);
-    Bitmap *bitmap = cyber.create_text(str1, 0x6Fa6, 16);
+    cyber.set_bitmap(5, 37, cyber.create_text(str1, 0xA6a6, 16));
     free(str1);
-    cyber.set_bitmap(5, 37, bitmap);
     cyber.render_lcd();
-    cyber.free_bitmap(bitmap);
-    
+
     char *str2 = (char *)malloc(16);
     sprintf(str2, "%d\n\0", z);
     ble_server_send(str2);
@@ -127,11 +105,9 @@ void loop()
     {
         char *str = (char *)malloc(64);
         sprintf(str, "%d:%d\0", i, values[i]);
-        Bitmap *bmp = cyber.create_text(str, 0xffff, 16);
+        cyber.set_bitmap(16, 32 + 32 * i, cyber.create_text(str, 0xffff, 16));
         free(str);
-        cyber.set_bitmap(16, 32 + 32 * i, bmp);
         cyber.render_lcd();
-        cyber.free_bitmap(bmp);
     }
     ble_client_run();
 #endif
