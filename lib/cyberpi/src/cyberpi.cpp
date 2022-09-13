@@ -32,7 +32,7 @@ CyberPi::CyberPi()
 }
 void CyberPi::begin()
 {
-    _shared->buffer = (uint16_t*)this->malloc(128*128*2);
+    _shared->buffer = (uint16_t *)MALLOC_SPI(128 * 128 * 2);
     i2c_init();
     aw_init();
     begin_gpio();
@@ -75,7 +75,7 @@ void CyberPi::begin_gpio()
 
 void CyberPi::begin_lcd()
 {
-    _framebuffer = (uint16_t *)this->malloc(128 * 128 * 2);
+    _framebuffer = (uint16_t *)MALLOC_SPI(128 * 128 * 2);
     memset(_framebuffer, 0, 128 * 128 * 2);
     lcd_init();
 }
