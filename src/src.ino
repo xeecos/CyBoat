@@ -2,7 +2,7 @@
 #include "mbot2.h"
 #define PADDLE_MODE 1
 #define BOAT_MODE 0
-#define MODE BOAT_MODE
+#define MODE PADDLE_MODE
 #if MODE == BOAT_MODE
 #include "ble_client.h"
 #elif MODE == PADDLE_MODE
@@ -11,6 +11,8 @@ float xx[128];
 int push_idx = 0;
 int pop_idx = 0;
 #endif
+float speeds[2] = {0, 0};
+#define BOAT_DEACCEL 0.5f
 CyberPi cyber;
 int values[2] = {0, 0};
 int lo[7] = {48, 50, 52, 53, 55, 57, 59};
@@ -28,7 +30,13 @@ void onBLEReceived(uint16_t connId, uint8_t *res, int len)
         str[i] = res[i];
     }
     str[len] = 0;
-    values[connId] = (int)strtof(str, NULL);
+    values[connId] = (int)strtof(str, NULL) - 110;
+    if (values[connId] < 0)
+    {
+        values[connId] = 0;
+    }
+    speeds[connId] += values[connId] / 10.0f;
+    speeds[1 - connId] += values[connId] / 30.0f;
 #endif
     // cyber.clean_lcd();
 }
@@ -39,9 +47,11 @@ void onBLEConnected(const char *name)
     cyber.render_lcd();
     _isConnected = true;
 }
+
 void setup()
 {
     Serial.begin(115200);
+
     _isConnected = false;
     cyber.begin();
     cyber.clean_lcd();
@@ -76,7 +86,7 @@ void loop()
 //     delay(100);
 // }
 #if MODE == PADDLE_MODE
-    if (_isConnected)
+    if (!_isConnected)
     {
         cyber.read_gyro();
         // Serial.printf("%.2f,%.2f,%.2f,%.2f,%.2f\n", cyber.get_roll(), cyber.get_pitch(), cyber.get_acc_x() / 80, cyber.get_acc_y() / 80, cyber.get_acc_z() / 80);
@@ -92,15 +102,15 @@ void loop()
         //     int current = (int8_t)(xx[idx] / 64) + 64;
         //     cyber.set_lcd_pixel(i, current, 0xffff);
         // }
-        int z = (int)(cyber.get_acc_z() / 80);
+        int p = (int)(cyber.get_acc_z() / 80);
         char *str1 = (char *)malloc(16);
-        sprintf(str1, "z: %d\0", z);
+        sprintf(str1, "p: %d\0", p);
         cyber.set_bitmap(5, 37, cyber.create_text(str1, 0xA6a6, 16));
         free(str1);
         cyber.render_lcd();
 
         char *str2 = (char *)malloc(16);
-        sprintf(str2, "%d\n\0", z);
+        sprintf(str2, "%d\n\0", p);
         ble_server_send(str2);
         free(str2);
         ble_server_run();
@@ -113,7 +123,14 @@ void loop()
         cyber.set_bitmap(16, 32 + 32 * i, cyber.create_text(str, 0xffff, 16));
         free(str);
         cyber.render_lcd();
+        speeds[i] -= BOAT_DEACCEL;
+        if (speeds[i] < 0)
+        {
+            speeds[i] = 0.0;
+        }
     }
+
+    mbot2_run(speeds[0], speeds[1]);
     ble_client_run();
 #endif
     delay(25);
