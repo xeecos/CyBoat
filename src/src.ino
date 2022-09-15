@@ -1,7 +1,9 @@
 #include "cyberpi.h"
 #include "mbot2.h"
-#define PADDLE_MODE 1
+#include "esp_camera.h"
 #define BOAT_MODE 0
+#define GRAB_MODE 1
+#define PADDLE_MODE 2
 #define MODE PADDLE_MODE
 #if MODE == BOAT_MODE
 #include "ble_client.h"
