@@ -124,7 +124,6 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
      */
     void onResult(BLEAdvertisedDevice advertisedDevice)
     {
-
         // We have found a device, let us now see if it contains the service we are looking for.
         if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID))
         {

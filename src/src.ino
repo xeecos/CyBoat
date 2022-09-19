@@ -4,7 +4,7 @@
 #define BOAT_MODE 0
 #define GRAB_MODE 1
 #define PADDLE_MODE 2
-#define MODE PADDLE_MODE
+#define MODE BOAT_MODE
 #if MODE == BOAT_MODE
 #include "ble_client.h"
 #elif MODE == PADDLE_MODE
@@ -14,9 +14,10 @@ int push_idx = 0;
 int pop_idx = 0;
 #endif
 float speeds[2] = {0, 0};
-#define BOAT_DEACCEL 0.5f
+#define BOAT_DEACCEL 0.4
 CyberPi cyber;
 int values[2] = {0, 0};
+int last_values[2] = {0, 0};
 int lo[7] = {48, 50, 52, 53, 55, 57, 59};
 int mo[7] = {60, 62, 64, 65, 67, 69, 71};
 int ho[7] = {72, 74, 76, 77, 79, 81, 83};
@@ -25,6 +26,7 @@ void onBLEReceived(uint16_t connId, uint8_t *res, int len)
 {
 // Serial.printf("%d %d\n", connId, len);
 #if MODE == BOAT_MODE
+    _isConnected = true;
     char str[65];
     int i;
     for (i = 0; i < len; i++)
@@ -32,20 +34,30 @@ void onBLEReceived(uint16_t connId, uint8_t *res, int len)
         str[i] = res[i];
     }
     str[len] = 0;
-    values[connId] = (int)strtof(str, NULL) - 110;
-    if (values[connId] < 0)
+    values[connId] = (int)strtof(str, NULL);
+    // if (values[connId] < 0)
+    // {
+    //     values[connId] = 0;
+    // }
+    float diff = values[connId] - last_values[connId];
+    if (diff < 0)
     {
-        values[connId] = 0;
+        diff = 0;
     }
-    speeds[connId] += values[connId] / 10.0f;
-    speeds[1 - connId] += values[connId] / 30.0f;
+    if (diff > 100)
+    {
+        diff = 100;
+    }
+    speeds[connId] += diff / 30.0f;
+    speeds[1 - connId] += diff / 60.0f;
+    last_values[connId] = values[connId];
 #endif
     // cyber.clean_lcd();
 }
 void onBLEConnected(const char *name)
 {
     cyber.clean_lcd();
-    cyber.set_bitmap(5, 7, cyber.create_text(L"CyPaddle 已连接", 0x6Fa6, 16));
+    cyber.set_bitmap(5, 7, cyber.create_text(L"Paddle2 已连接", 0x6Fa6, 16));
     cyber.render_lcd();
     _isConnected = true;
 }
@@ -63,18 +75,21 @@ void setup()
     mbot2_init();
     ble_client_init(onBLEConnected, onBLEReceived);
     cyber.clean_lcd();
-    cyber.set_bitmap(10, 7, cyber.create_text(L"CyBoat 已上线", 0x6Fa6, 16));
+    cyber.set_bitmap(10, 7, cyber.create_text(L"CyBoat2 已上线", 0x6Fa6, 16));
     cyber.render_lcd();
+
 #elif MODE == PADDLE_MODE
     cyber.set_bitmap(5, 7, cyber.create_text(L"启动中...", 0x6Fa6, 16));
     cyber.render_lcd();
-    ble_server_init("CyBoat P1", onBLEConnected, onBLEReceived);
-    cyber.set_bitmap(5, 7, cyber.create_text(L"CyPaddle 已上线", 0x6Fa6, 16));
+    ble_server_init("CyBoat P2", onBLEConnected, onBLEReceived);
+    cyber.set_bitmap(5, 7, cyber.create_text(L"Paddle2 已上线", 0x6Fa6, 16));
     cyber.render_lcd();
 #endif
     // cyboat - client
     // cypaddle - server
 }
+int angle = 120;
+int dir = 1;
 void loop()
 {
 // for (int i = 1; i < 11; i++)
@@ -88,7 +103,7 @@ void loop()
 //     delay(100);
 // }
 #if MODE == PADDLE_MODE
-    if (!_isConnected)
+    if (_isConnected)
     {
         cyber.read_gyro();
         // Serial.printf("%.2f,%.2f,%.2f,%.2f,%.2f\n", cyber.get_roll(), cyber.get_pitch(), cyber.get_acc_x() / 80, cyber.get_acc_y() / 80, cyber.get_acc_z() / 80);
@@ -118,21 +133,46 @@ void loop()
         ble_server_run();
     }
 #elif MODE == BOAT_MODE
-    for (int i = 0; i < 2; i++)
+    if (_isConnected)
     {
-        char *str = (char *)malloc(64);
-        sprintf(str, "%d:%d\0", i, values[i]);
-        cyber.set_bitmap(16, 32 + 32 * i, cyber.create_text(str, 0xffff, 16));
-        free(str);
-        cyber.render_lcd();
-        speeds[i] -= BOAT_DEACCEL;
-        if (speeds[i] < 0)
-        {
-            speeds[i] = 0.0;
-        }
-    }
 
-    mbot2_run(speeds[0], speeds[1]);
+        for (int i = 0; i < 2; i++)
+        {
+            char *str = (char *)malloc(64);
+            sprintf(str, "%d:%d\0", i, (int)speeds[i]);
+            cyber.set_bitmap(16, 32 + 32 * i, cyber.create_text(str, 0xffff, 16));
+            free(str);
+            cyber.render_lcd();
+            speeds[i] -= BOAT_DEACCEL;
+            if (speeds[i] < 0)
+            {
+                speeds[i] = 0.0;
+            }
+        }
+        angle = 90+(speeds[1]+speeds[0])/2;
+        if(angle>160)
+        {
+            angle = 160;
+        }
+        mbot2_servo_set(2, angle);
+        mbot2_servo_set(4, angle);
+        mbot2_run(speeds[0], speeds[1]);
+    }
+    else
+    {
+        angle += dir;
+        if (angle > 160)
+        {
+            dir = -1;
+        }
+        else if (angle < 120)
+        {
+            dir = 1;
+        }
+        mbot2_servo_set(2, angle);
+        mbot2_servo_set(4, angle);
+        delay(25);
+    }
     ble_client_run();
 #endif
     delay(25);

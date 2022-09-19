@@ -52,6 +52,12 @@ void mbot2_servo_set(int angle1,int angle2,int angle3,int angle4)
     short2bits(angle4,&cmd[13]);
     sendCMD(cmd, 16);
 }
+void mbot2_servo_set(int idx,int angle)
+{
+    uint8_t cmd[8] = {0x1, 0x67, 0x07, 0x51, idx, 0, 0, 0};
+    short2bits(angle,&cmd[5]);
+    sendCMD(cmd, 8);
+}
 void mbot2_dc_motor(float power1,float power2)
 {
     uint8_t cmd[14] = {0x1, 0x67, 0x07, 0x43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
